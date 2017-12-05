@@ -1,12 +1,15 @@
 package gramatica;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Gramatica {
 	ArrayList<String> Nterminais = new ArrayList<String>();
 	ArrayList<String> terminais = new ArrayList<String>();
 	ArrayList<String> producoes = new ArrayList<String>();
 	String start;
-	
+	Map<String,String[]> first = new HashMap();
 	public Gramatica(){
 		
 	}
@@ -41,16 +44,81 @@ public class Gramatica {
 		System.out.println("Lista de First's:");
 		for(String prod:this.producoes){
 			String[] temp = prod.split("->");
-			System.out.print("First("+ temp[0]+")={");
-			if(isTerminal(""+temp[1].charAt(0))){
-				System.out.println(temp[1].charAt(0)+"}");//adicionar os fist
+			//System.out.print("First("+ temp[0]+")={");
+			if(isTerminal(""+temp[1].charAt(0)) || temp[1].charAt(0)=='&'){
+				String temporario[] = first.get(temp[0]);
+				if(temporario==null){
+					temporario = new String[0];
+				}
+				String temporario2[] = new String[temporario.length+1];
+				for(int i=0;i<temporario2.length-1;i++){
+					temporario2[i] = temporario[i];
+				}
+				temporario2[temporario2.length-1] = ""+temp[1].charAt(0);
+				first.put(temp[0],temporario2);
 			}else{
-				System.out.println("First("+ temp[1]+")}");
+				String temporario[] = first.get(temp[0]);
+				if(temporario==null){
+					temporario = new String[0];
+				}
+				String temporario2[] = new String[temporario.length+1];
+				for(int i=0;i<temporario2.length-1;i++){
+					temporario2[i] = temporario[i];
+				}
+				temporario2[temporario2.length-1] = ""+"First("+ temp[1].charAt(0)+")";
+				first.put(temp[0],temporario2);
 			}
 			
 		}
+		for(String chave:this.Nterminais){
+			System.out.print("first("+chave+"):{");
+			String[] listafirst = first.get(chave);
+			for(int i=0;i<listafirst.length;i++){
+				if(listafirst[i].length()>1){
+					String[] listafirstaux = first.get(""+listafirst[i].charAt(6));
+					if(contemVazio(listafirstaux)){//se tiver vazio, add first do proximo
+						achafirstComVazio(chave,listafirst[i].charAt(6));//procura a produção que gerou first(chave)=first(listafirst[i].charAt(6))
+					}
+					
+					for(int j=0; j<listafirstaux.length;j++){//imprimi os fist sem o vazio
+						if(!listafirstaux[j].equals("&")){
+							System.out.print(listafirstaux[j]+", ");
+						}
+					}
+					
+				}else{
+					System.out.print(listafirst[i]+ ", ");
+				}
+			}
+			System.out.println("}");
+		}
 	}
 	
+	private void achafirstComVazio(String chave, char caracter) {
+		for(String temp:producoes){
+			String[] prod = temp.split("->");
+			if(prod[0].equals(chave)){
+				if(prod[1].charAt(0)==caracter){
+					if(prod[1].length()<1){
+						System.out.print("$");
+					}else{
+						System.out.print(Arrays.toString(first.get(""+prod[1].charAt(1)))+", ");
+					}
+					
+				}
+			}
+		}		
+	}
+
+	private boolean contemVazio(String[] listafirst) {
+		for(int i=0;i<listafirst.length;i++){
+			if(listafirst[i].equals("&")){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void listarFollow(){
 		System.out.println("Lista de Follow's:");
 		for(String prod:this.producoes){
@@ -99,17 +167,19 @@ public class Gramatica {
 		
 		Nterminais.add("S");
 		Nterminais.add("F");
+		Nterminais.add("B");
 		
 		terminais.add("(");
 		terminais.add("a");
 		terminais.add(")");
 		terminais.add("+");
-		terminais.add("&");//vazio
+		terminais.add("b");
 		
-		producoes.add("S->F");
+		producoes.add("S->FB");
 		producoes.add("S->(S+F)");
 		producoes.add("F->a");
 		producoes.add("F->&");
+		producoes.add("B->b");
 		Gramatica g = new Gramatica(Nterminais,terminais,producoes,"S");
 		//g.listarGramatica();
 		//g.listarPorSimbolo("F");
