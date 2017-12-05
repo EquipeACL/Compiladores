@@ -1,4 +1,4 @@
-# Gramatica LL(1), First & Follow e Tabela Preditiva.
+# First & Follow e Tabela Preditiva.
 
 Projeto para disciplina de compiladores.
 Equipe: Adalcino Jr, Lucas Rocha
