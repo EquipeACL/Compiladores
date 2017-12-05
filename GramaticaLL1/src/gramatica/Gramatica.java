@@ -1,5 +1,4 @@
 package gramatica;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -75,8 +74,11 @@ public class Gramatica {
 			}
 			
 		}
+                int cont = 0;
 		for(String chave:this.Nterminais){
-			//System.out.print("first("+chave+"):{");
+			chave = this.Nterminais.get(this.Nterminais.size()-1-cont);
+                        cont++;
+                        //System.out.print("first("+chave+"):{");
 			String[] listafirst = first.get(chave);
 			for(int i=0;i<listafirst.length;i++){
 				if(listafirst[i] != null){
@@ -85,14 +87,22 @@ public class Gramatica {
 						String[] listafirstaux = first.get(""+listafirst[i].charAt(6));
 						if(contemVazio(listafirstaux)){//se tiver vazio, add first do proximo
 							achafirstComVazio(chave,listafirst[i].substring(6,listafirst[i].length()-1));//procura a produção que gerou first(chave)=first(listafirst[i].charAt(6))
-						}					
-						for(int j=0; j<listafirstaux.length;j++){//add os fist sem o vazio
-							if(!listafirstaux[j].equals("&")){
-								String[] temporario = append(chave,listafirstaux[j]);
-								first.put(chave,temporario);
-								//System.out.print(listafirstaux[j]+", ");
-							}
-						}
+                                                        for (int j = 0; j < listafirstaux.length; j++) {//add os fist sem o vazio
+                                                            if (!listafirstaux[j].equals("&")) {
+                                                                String[] temporario = append(chave, listafirstaux[j]);
+                                                                first.put(chave, temporario);
+                                                                //System.out.print(listafirstaux[j]+", ");
+                                                            }
+                                                        }
+                                                }else{
+                                                    for (int j = 0; j < listafirstaux.length; j++) {//add os fist.
+                                                        String[] temporario = append(chave, listafirstaux[j]);
+                                                        first.put(chave, temporario);
+                                                        //System.out.print(listafirstaux[j]+", ");
+                                                            
+                                                        }
+                                                }					
+						
 						//first.remove(chave);
 					}else{
 						String[] temporario = append(chave,listafirst[i]);
@@ -262,7 +272,7 @@ public class Gramatica {
 			String[] temp = first.get(prod);
 			ArrayList<String> lista = new ArrayList<String>();
 			for(int i=0; i < temp.length;i++){
-				if(!(temp[i].length()>1)){
+				if(!(temp[i].length()>1) && isTerminal(temp[i])){
 					lista.add(temp[i]);
 				}
 			}
@@ -319,23 +329,54 @@ public class Gramatica {
 	}
 	
 	private String[] retornaFollow(String chave, String[] producao) {
-		for(int i=0; i<producao[1].length();i++){
+            String[] retorno = new String[0];
+           
+            for(int i=0; i<producao[1].length();i++){    
+                        
 			if(chave.equals(""+producao[1].charAt(i))){
 				if(i==producao[1].length()-1){
 					String[] temporario = follow.get(producao[0]);
-					return temporario;
+					retorno = adicionar(retorno,temporario);
 				}else {
 					if(isTerminal(""+producao[1].charAt(i+1))){
 						//System.out.println("Follow("+chave+"):{"+producao[1].charAt(i+1)+"}");
-						return new String[]{""+producao[1].charAt(i+1)};
+						retorno = adicionar(retorno,new String[]{""+producao[1].charAt(i+1)});
 					}else if(isNTerminal(""+producao[1].charAt(i+1))){
 						//System.out.println("Follow("+chave+"):First("+producao[1].charAt(i+1)+")");
-						return first.get(""+producao[1].charAt(i+1));
+                                                String[] temporario = first.get(""+producao[1].charAt(i+1));
+                                                ArrayList<String> lista = new ArrayList<String>();//lista para armazenar os first
+                                                for(int a=0;a<temporario.length;a++){
+                                                    lista.add(temporario[a]);
+                                                }
+                                                if(lista.contains("&")){//Follow(Beta) = First(B)-{&}UFollow(A)
+                                                    String[] temporario2 = new String[temporario.length-1];//First sem o vazio
+                                                    for(int a=0;a<temporario.length;a++){
+                                                        if(!temporario[a].equals("&")){
+                                                            temporario2[a] = temporario[a];
+                                                        }
+                                                    }
+                                                    String[] temporarioFollow = follow.get(""+producao[0]);
+                                                    ArrayList<String> listaFinal = new ArrayList<String>();//lista para armazenar os firsts e os follows
+                                                    for (int a = 0; a < temporario2.length; a++) {
+                                                        listaFinal.add(temporario2[a]);
+                                                    }
+                                                    for (int a = 0; a < temporarioFollow.length; a++) {
+                                                        listaFinal.add(temporarioFollow[a]);
+                                                    }
+                                                    temporarioFollow = new String[listaFinal.size()];
+                                                    for (int a = 0; a < temporarioFollow.length; a++) {
+                                                        temporarioFollow[a] = listaFinal.get(a);
+                                                    }
+                                                    retorno = adicionar(retorno,temporarioFollow);
+                                                }else{//Follow(Beta) = First(B)
+                                                    retorno = adicionar(retorno,temporario);
+                                                }
+						
 					}
 				}
 			}
 		}
-		return null;
+		return retorno;
 	}
 
 	private String[] appendFollow(String chave,String conteudo) {
@@ -531,4 +572,21 @@ public class Gramatica {
 //		g.listarFollow();
 //		g.tabela();
 //	}
+
+    private String[] adicionar(String[] anterior,String[] novos) {
+        ArrayList<String> listaRetorno = new ArrayList<String>();
+        for(int i=0;i<anterior.length;i++){
+            listaRetorno.add(anterior[i]);
+        }
+        for(int i=0;i<novos.length;i++){
+            if(!listaRetorno.contains(novos[i])){
+                listaRetorno.add(novos[i]);
+            }
+        }
+        String[] retorno = new String[listaRetorno.size()];
+        for(int i=0;i<retorno.length;i++){
+            retorno[i] = listaRetorno.get(i);
+        }
+        return retorno;
+    }
 }
